@@ -1,83 +1,367 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Cow Game</title>
-  <style>
-    body { background:#222; color:#fff; text-align:center; font-family:sans-serif; }
-    canvas { background:#333; margin-top:10px; border:2px solid #555; max-width:90%; height:auto; }
-    button { margin:4px; padding:8px 14px; border:none; border-radius:6px; background:#444; color:#fff; font-size:16px; }
-    button:hover { background:#666; cursor:pointer; }
-  </style>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no" />
+<title>Cow Tamagotchi • v1</title>
+<style>
+  :root{
+    --bg:#87CEEB; --ground:#6bb23f; --panel: rgba(255,255,255,0.06);
+    --accent:#ffd166;
+  }
+  html,body{height:100%;margin:0;font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial; -webkit-tap-highlight-color: transparent;}
+  body{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;background:linear-gradient(180deg,var(--bg),#cfeeff 60%); color:#062; padding:12px; box-sizing:border-box;}
+  h1{margin:8px 0 6px 0;font-size:18px;text-align:center;color:#0a3;}
+  .game-wrap{width:100%;max-width:900px;flex:0 0 auto; display:flex; gap:12px; flex-direction:column; align-items:center;}
+  canvas{width:100%; height:auto; background:transparent; border-radius:12px; box-shadow: 0 10px 30px rgba(0,0,0,0.25); border:4px solid rgba(255,255,255,0.04); touch-action:none;}
+  .ui-row{display:flex; gap:10px; width:100%; align-items:center; justify-content:space-between;}
+  .controls{display:flex; gap:10px; justify-content:center; width:100%;}
+  .btn{flex:1; padding:14px 10px; border-radius:12px; font-size:18px; background:var(--panel); color:#042; border:1px solid rgba(0,0,0,0.15); box-shadow: inset 0 -6px rgba(0,0,0,0.06); user-select:none; -webkit-user-select:none;}
+  .btn:active{transform:translateY(1px); opacity:.95;}
+  .btn.accent{background:linear-gradient(180deg,var(--accent),#f2b656); color:#3a1;}
+  .meters{display:flex; gap:8px; align-items:center; width:100%;}
+  .meter{flex:1; background:rgba(255,255,255,0.06); padding:8px; border-radius:10px; font-size:13px;}
+  .bar{height:10px; background:#0b0b0b; border-radius:8px; overflow:hidden; margin-top:6px;}
+  .bar > i{display:block;height:100%; background:linear-gradient(90deg,#ffef96,#7be495); width:0%;}
+  .small{font-size:12px; opacity:.9; color:#043;}
+  .footer{width:100%; max-width:900px; margin-top:10px; font-size:13px; color:rgba(0,0,0,0.6); text-align:center;}
+  @media (min-width:760px){ .controls{max-width:760px;} .btn{font-size:16px} }
+</style>
 </head>
 <body>
-  <h1>🐄 Cow Game (Prototype)</h1>
-  <div>
-    <button onclick="setAnim('idle')">Idle</button>
-    <button onclick="setAnim('mooo')">Mooo</button>
-    <button onclick="setAnim('eat')">Eat</button>
+  <h1>🐄 Cow Tamagotchi</h1>
+
+  <div class="game-wrap">
+    <canvas id="game" width="900" height="540" aria-label="Cow game canvas"></canvas>
+
+    <div class="ui-row meters">
+      <div class="meter">
+        Hunger <span id="hungerText" style="float:right">--</span>
+        <div class="bar"><i id="hungerBar" style="width:0%"></i></div>
+        <div class="small">Feed to increase hunger (max 100). Hunger slowly drops over time.</div>
+      </div>
+      <div class="meter">
+        Happiness <span id="happyText" style="float:right">--</span>
+        <div class="bar"><i id="happyBar" style="width:0%"></i></div>
+        <div class="small">Mooing & feeding increase happiness.</div>
+      </div>
+    </div>
+
+    <div class="controls" style="margin-top:8px;">
+      <button class="btn" id="btnIdle">😴 Idle</button>
+      <button class="btn accent" id="btnFeed">🍀 Feed</button>
+      <button class="btn" id="btnMoo">🐮 Moo</button>
+    </div>
   </div>
-  <canvas id="game" width="500" height="400"></canvas>
 
-  <script>
-    const canvas = document.getElementById("game");
-    const ctx = canvas.getContext("2d");
+  <div class="footer">
+    Uses your raw GitHub image links. Progress is saved locally in this browser (localStorage).
+  </div>
 
-    // preload images
-    const images = {
-      mooo: ["https://raw.githubusercontent.com/alikhanima/CowGameWai/refs/heads/main/IMG_1641.jpeg"],
-      idle: [
-        "https://raw.githubusercontent.com/alikhanima/CowGameWai/refs/heads/main/IMG_1706.jpeg",
-        "https://raw.githubusercontent.com/alikhanima/CowGameWai/refs/heads/main/IMG_1705.jpeg"
-      ],
-      eat: [
-        "https://raw.githubusercontent.com/alikhanima/CowGameWai/refs/heads/main/IMG_1703.jpeg",
-        "https://raw.githubusercontent.com/alikhanima/CowGameWai/refs/heads/main/IMG_1702.jpeg",
-        "https://raw.githubusercontent.com/alikhanima/CowGameWai/refs/heads/main/IMG_1701.jpeg"
-      ]
-    };
+<script>
+/* -------------------------
+   IMAGE SOURCES (your links)
+   ------------------------- */
+const ASSETS = {
+  mooo: ["https://raw.githubusercontent.com/alikhanima/CowGameWai/refs/heads/main/IMG_1641.jpeg"],
+  idle: [
+    "https://raw.githubusercontent.com/alikhanima/CowGameWai/refs/heads/main/IMG_1706.jpeg",
+    "https://raw.githubusercontent.com/alikhanima/CowGameWai/refs/heads/main/IMG_1705.jpeg"
+  ],
+  eat: [
+    "https://raw.githubusercontent.com/alikhanima/CowGameWai/refs/heads/main/IMG_1703.jpeg",
+    "https://raw.githubusercontent.com/alikhanima/CowGameWai/refs/heads/main/IMG_1702.jpeg",
+    "https://raw.githubusercontent.com/alikhanima/CowGameWai/refs/heads/main/IMG_1701.jpeg"
+  ]
+};
 
-    const loaded = {};
-    for (let key in images) {
-      loaded[key] = images[key].map(src => {
-        const img = new Image();
-        img.src = src;
-        return img;
-      });
-    }
+/* -------------------------
+   Simple persistent game data
+   ------------------------- */
+const STORAGE_KEY = "cow_tama_v1_state";
+let state = {
+  hunger: 80,       // 0..100 (100 = full)
+  happy: 70,        // 0..100
+  lastTick: Date.now(),
+};
+function loadState(){ try{ const s=localStorage.getItem(STORAGE_KEY); if(s) state = Object.assign(state, JSON.parse(s)); }catch(e){} }
+function saveState(){ try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }catch(e){} }
+loadState();
 
-    let currentAnim = "idle";
-    let frame = 0;
-    let timer = 0;
+/* -------------------------
+   Canvas setup & drawing
+   ------------------------- */
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d", { alpha: false });
+let DPR = Math.max(1, window.devicePixelRatio || 1);
+function resize(){
+  DPR = Math.max(1, window.devicePixelRatio || 1);
+  canvas.style.height = (canvas.clientWidth * 0.6) + "px";
+  canvas.width = Math.floor(canvas.clientWidth * DPR);
+  canvas.height = Math.floor(parseFloat(canvas.style.height) * DPR);
+}
+window.addEventListener("resize", resize);
+resize();
 
-    function setAnim(name) {
-      currentAnim = name;
-      frame = 0;
-      timer = 0;
-    }
+/* -------------------------
+   Preload images
+   ------------------------- */
+const images = {};
+let toLoad = 0;
+function preloadAssets(cb){
+  const urls = Object.values(ASSETS).flat();
+  const unique = [...new Set(urls)];
+  toLoad = unique.length;
+  if (toLoad === 0) { cb(); return; }
+  unique.forEach(url=>{
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = ()=>{ images[url] = img; toLoad--; if(toLoad===0) cb(); };
+    img.onerror = ()=>{ console.warn("img failed:",url); images[url] = img; toLoad--; if(toLoad===0) cb(); };
+    img.src = url;
+  });
+}
 
-    function loop(ts) {
-      ctx.clearRect(0,0,canvas.width,canvas.height);
+/* -------------------------
+   Animator / state machine
+   ------------------------- */
+const ANIM = {
+  name: "idle",     // idle | eat | mooo
+  frameIndex: 0,
+  frameTime: 0,     // ms
+  playing: true,
+};
+const FRAME_DEFAULT = 450; // ms per frame general (tweak per anim)
+const ANIM_SETTINGS = {
+  idle: { frames: ASSETS.idle, loop:true, frameMs: 700 },
+  mooo: { frames: ASSETS.mooo, loop:false, frameMs: 700 },
+  eat:  { frames: ASSETS.eat, loop:false, frameMs: 450 },
+};
 
-      let animFrames = loaded[currentAnim];
-      if (animFrames && animFrames.length > 0) {
-        let img = animFrames[frame];
-        let scale = Math.min(canvas.width/img.width, canvas.height/img.height) * 0.9;
-        let w = img.width * scale;
-        let h = img.height * scale;
-        ctx.drawImage(img, (canvas.width-w)/2, (canvas.height-h)/2, w, h);
+function setAnim(name, force=false){
+  if (!ANIM_SETTINGS[name]) return;
+  if (ANIM.name === name && !force) return;
+  ANIM.name = name;
+  ANIM.frameIndex = 0;
+  ANIM.frameTime = 0;
+  ANIM.playing = true;
+}
 
-        // cycle frames every 500ms
-        timer += 16;
-        if (timer > 500) {
-          frame = (frame+1) % animFrames.length;
-          timer = 0;
-        }
+/* -------------------------
+   Buttons + touch handlers
+   ------------------------- */
+document.getElementById("btnFeed").addEventListener("touchstart", (e)=>{ e.preventDefault(); feed(); });
+document.getElementById("btnFeed").addEventListener("click", (e)=>{ feed(); });
+document.getElementById("btnMoo").addEventListener("touchstart",(e)=>{ e.preventDefault(); moo(); });
+document.getElementById("btnMoo").addEventListener("click",(e)=>{ moo(); });
+document.getElementById("btnIdle").addEventListener("click",(e)=>{ setAnim("idle", true); });
+
+/* -------------------------
+   Game actions
+   ------------------------- */
+let lastActionTime = 0;
+
+function clamp(v,min,max){ return Math.max(min, Math.min(max, v)); }
+
+function feed(){
+  const now = Date.now();
+  if (now - lastActionTime < 600) return; // debounce
+  lastActionTime = now;
+
+  setAnim("eat", true);
+  // eating rewards
+  state.hunger = clamp(state.hunger + 22, 0, 100);
+  state.happy = clamp(state.happy + 8, 0, 100);
+  saveState();
+  updateMeters();
+}
+
+function moo(){
+  const now = Date.now();
+  if (now - lastActionTime < 500) return;
+  lastActionTime = now;
+
+  setAnim("mooo", true);
+  state.happy = clamp(state.happy + 4, 0, 100);
+  saveState();
+  updateMeters();
+}
+
+/* -------------------------
+   Progress meters UI
+   ------------------------- */
+const hungerBar = document.getElementById("hungerBar");
+const happyBar  = document.getElementById("happyBar");
+const hungerText = document.getElementById("hungerText");
+const happyText  = document.getElementById("happyText");
+
+function updateMeters(){
+  hungerBar.style.width = state.hunger + "%";
+  happyBar.style.width = state.happy + "%";
+  hungerText.textContent = Math.round(state.hunger);
+  happyText.textContent = Math.round(state.happy);
+}
+updateMeters();
+
+/* -------------------------
+   Passive timers (hunger decay, autos)
+   ------------------------- */
+function passiveTick(dtMs){
+  // hunger decays slowly
+  const decayPerMinute = 6; // points per minute
+  const decayPerMs = decayPerMinute / 60000;
+  state.hunger = clamp(state.hunger - decayPerMs * dtMs, 0, 100);
+
+  // small happiness drift influenced by hunger
+  if (state.hunger < 25) state.happy = clamp(state.happy - 0.02 * dtMs/1000, 0, 100);
+  else state.happy = clamp(state.happy + 0.005 * dtMs/1000, 0, 100);
+
+  saveState();
+  updateMeters();
+}
+
+/* -------------------------
+   Main loop / render
+   ------------------------- */
+let last = performance.now();
+let idleToggleTimer = 0;
+let randomActionTimer = 0;
+
+function gameLoop(now){
+  const dt = Math.min(100, now - last); // ms
+  last = now;
+
+  // passive updates
+  passiveTick(dt);
+
+  // animator update
+  const animCfg = ANIM_SETTINGS[ANIM.name] || ANIM_SETTINGS.idle;
+  ANIM.frameTime += dt;
+  const frameMs = animCfg.frameMs || FRAME_DEFAULT;
+  if (ANIM.frameTime >= frameMs){
+    ANIM.frameTime = 0;
+    ANIM.frameIndex++;
+    const framesLen = (animCfg.frames || []).length || 1;
+    if (ANIM.frameIndex >= framesLen){
+      if (animCfg.loop) ANIM.frameIndex = 0;
+      else {
+        // done with a non-loop animation -> return to idle
+        setAnim("idle", true);
       }
-      requestAnimationFrame(loop);
     }
-    loop();
-  </script>
+  }
+
+  // random idle behavior: occasionally force leg-up (idle alternate)
+  idleToggleTimer += dt;
+  if (ANIM.name === "idle" && idleToggleTimer > 1400){
+    // toggle frame index between 0/1 if idle has 2 frames
+    if ((ANIM_SETTINGS.idle.frames || []).length > 1){
+      ANIM.frameIndex = (ANIM.frameIndex + 1) % ANIM_SETTINGS.idle.frames.length;
+    }
+    idleToggleTimer = 0;
+  }
+
+  // random small autonomous actions when idle (moo randomly)
+  randomActionTimer += dt;
+  if (randomActionTimer > 8000 + Math.random()*8000){
+    if (ANIM.name === "idle"){
+      // 50% chance to moo
+      if (Math.random() < 0.5) { moo(); }
+    }
+    randomActionTimer = 0;
+  }
+
+  // draw scene
+  render();
+
+  requestAnimationFrame(gameLoop);
+}
+
+/* -------------------------
+   Render routine
+   ------------------------- */
+function render(){
+  // clear and draw sky + ground
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  // sky gradient
+  const g = ctx.createLinearGradient(0,0,0,canvas.height);
+  g.addColorStop(0, "#bfe8ff");
+  g.addColorStop(0.7, "#dff6ff");
+  ctx.fillStyle = g;
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+
+  // ground
+  const groundH = Math.floor(canvas.height * 0.18);
+  ctx.fillStyle = "#3e8e2e";
+  ctx.fillRect(0, canvas.height - groundH, canvas.width, groundH);
+
+  // simple sun
+  const sunX = canvas.width - Math.floor(canvas.width * 0.14);
+  const sunY = Math.floor(canvas.height * 0.12);
+  ctx.beginPath();
+  ctx.fillStyle = "#ffd166";
+  ctx.arc(sunX, sunY, Math.max(18, canvas.width*0.03), 0, Math.PI*2);
+  ctx.fill();
+
+  // draw cow centered horizontally, sits above ground
+  const centerX = canvas.width / 2;
+  const bottomY = canvas.height - groundH + 6 * DPR; // little sink into ground
+  const animCfg = ANIM_SETTINGS[ANIM.name] || ANIM_SETTINGS.idle;
+  const frames = (animCfg.frames || []).map(url => images[url]).filter(Boolean);
+  let imgToDraw = null;
+  if (frames.length === 0) {
+    // fallback: draw a placeholder box
+    ctx.fillStyle = "#fff";
+    ctx.fillRect(centerX - 80*DPR, bottomY - 160*DPR, 160*DPR, 120*DPR);
+  } else {
+    // ensure frameIndex is valid
+    const idx = ANIM.frameIndex % frames.length;
+    imgToDraw = frames[idx] || frames[0];
+    if (imgToDraw && imgToDraw.complete && imgToDraw.naturalWidth){
+      // scale to fit ~50% of canvas width
+      const targetW = canvas.width * 0.5;
+      const scale = (targetW / imgToDraw.naturalWidth);
+      const drawW = imgToDraw.naturalWidth * scale;
+      const drawH = imgToDraw.naturalHeight * scale;
+      ctx.drawImage(imgToDraw, centerX - drawW/2, bottomY - drawH, drawW, drawH);
+    } else {
+      // not loaded yet - simple placeholder
+      ctx.fillStyle = "#fff";
+      ctx.fillRect(centerX - 80*DPR, bottomY - 140*DPR, 160*DPR, 100*DPR);
+    }
+  }
+
+  // small status text overlay
+  ctx.fillStyle = "rgba(0,0,0,0.6)";
+  ctx.fillRect(12*DPR, 12*DPR, 220*DPR, 46*DPR);
+  ctx.fillStyle = "#fff";
+  ctx.font = `${14*DPR}px system-ui, -apple-system, Segoe UI`;
+  ctx.fillText(`State: ${ANIM.name}`, 20*DPR, 32*DPR);
+  ctx.fillText(`Hunger ${Math.round(state.hunger)}  Happy ${Math.round(state.happy)}`, 20*DPR, 48*DPR);
+}
+
+/* -------------------------
+   Start everything
+   ------------------------- */
+preloadAssets(()=> {
+  // ensure frameMs present for anims, set defaults if missing
+  Object.keys(ANIM_SETTINGS).forEach(k => { ANIM_SETTINGS[k].frameMs = ANIM_SETTINGS[k].frameMs || FRAME_DEFAULT; });
+
+  // initial anim
+  setAnim("idle", true);
+  updateMeters();
+
+  // set canvas pixel-ratio aware sizing & start loop
+  resize();
+  requestAnimationFrame((t)=>{ last = t; gameLoop(t); });
+});
+
+/* -------------------------
+   Page visibility: save
+   ------------------------- */
+document.addEventListener("visibilitychange", ()=>{ if(document.hidden) saveState(); });
+window.addEventListener("beforeunload", saveState);
+
+</script>
 </body>
 </html>
