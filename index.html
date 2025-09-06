@@ -1,60 +1,83 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
-  <title>Cow Game • Starter</title>
-  <link rel="stylesheet" href="css/style.css" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cow Game</title>
+  <style>
+    body { background:#222; color:#fff; text-align:center; font-family:sans-serif; }
+    canvas { background:#333; margin-top:10px; border:2px solid #555; max-width:90%; height:auto; }
+    button { margin:4px; padding:8px 14px; border:none; border-radius:6px; background:#444; color:#fff; font-size:16px; }
+    button:hover { background:#666; cursor:pointer; }
+  </style>
 </head>
 <body>
-  <div id="ui">
-    <h1>🐄 Cow Game (Starter)</h1>
-    <p class="hint">Add your animation image links below (one by one). They will be saved in your browser (localStorage) and will work on GitHub Pages + iPhone.</p>
-
-    <form id="add-frame-form">
-      <label>
-        Animation name
-        <input id="anim-name" list="anim-presets" placeholder="e.g., idle, walk, eat, blink, attack" required />
-        <datalist id="anim-presets">
-          <option value="idle"></option>
-          <option value="walk"></option>
-          <option value="eat"></option>
-          <option value="blink"></option>
-          <option value="attack"></option>
-        </datalist>
-      </label>
-      <label>
-        Image URL (PNG/WebP with transparent background recommended)
-        <input id="frame-url" type="url" placeholder="https://..." required />
-      </label>
-      <label class="small">
-        Frame duration (ms)
-        <input id="frame-duration" type="number" min="16" value="120" required />
-      </label>
-      <label class="small">
-        Loop?
-        <input id="frame-loop" type="checkbox" checked />
-      </label>
-      <button type="submit">Add frame</button>
-      <button type="button" id="clear-all" class="danger">Clear all</button>
-      <button type="button" id="export-json">Export JSON</button>
-      <input type="file" id="import-json" accept="application/json" hidden />
-      <button type="button" id="import-json-btn">Import JSON</button>
-    </form>
-
-    <div id="anim-list"></div>
+  <h1>🐄 Cow Game (Prototype)</h1>
+  <div>
+    <button onclick="setAnim('idle')">Idle</button>
+    <button onclick="setAnim('mooo')">Mooo</button>
+    <button onclick="setAnim('eat')">Eat</button>
   </div>
+  <canvas id="game" width="500" height="400"></canvas>
 
-  <canvas id="game" width="1280" height="720"></canvas>
+  <script>
+    const canvas = document.getElementById("game");
+    const ctx = canvas.getContext("2d");
 
-  <div id="controls">
-    <button id="btn-left" aria-label="Left">⬅️</button>
-    <button id="btn-right" aria-label="Right">➡️</button>
-    <button id="btn-eat" aria-label="Eat">🍀</button>
-    <button id="btn-attack" aria-label="Attack">💥</button>
-  </div>
+    // preload images
+    const images = {
+      mooo: ["https://raw.githubusercontent.com/alikhanima/CowGameWai/refs/heads/main/IMG_1641.jpeg"],
+      idle: [
+        "https://raw.githubusercontent.com/alikhanima/CowGameWai/refs/heads/main/IMG_1706.jpeg",
+        "https://raw.githubusercontent.com/alikhanima/CowGameWai/refs/heads/main/IMG_1705.jpeg"
+      ],
+      eat: [
+        "https://raw.githubusercontent.com/alikhanima/CowGameWai/refs/heads/main/IMG_1703.jpeg",
+        "https://raw.githubusercontent.com/alikhanima/CowGameWai/refs/heads/main/IMG_1702.jpeg",
+        "https://raw.githubusercontent.com/alikhanima/CowGameWai/refs/heads/main/IMG_1701.jpeg"
+      ]
+    };
 
-  <script src="js/animations.js"></script>
-  <script src="js/main.js"></script>
+    const loaded = {};
+    for (let key in images) {
+      loaded[key] = images[key].map(src => {
+        const img = new Image();
+        img.src = src;
+        return img;
+      });
+    }
+
+    let currentAnim = "idle";
+    let frame = 0;
+    let timer = 0;
+
+    function setAnim(name) {
+      currentAnim = name;
+      frame = 0;
+      timer = 0;
+    }
+
+    function loop(ts) {
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+
+      let animFrames = loaded[currentAnim];
+      if (animFrames && animFrames.length > 0) {
+        let img = animFrames[frame];
+        let scale = Math.min(canvas.width/img.width, canvas.height/img.height) * 0.9;
+        let w = img.width * scale;
+        let h = img.height * scale;
+        ctx.drawImage(img, (canvas.width-w)/2, (canvas.height-h)/2, w, h);
+
+        // cycle frames every 500ms
+        timer += 16;
+        if (timer > 500) {
+          frame = (frame+1) % animFrames.length;
+          timer = 0;
+        }
+      }
+      requestAnimationFrame(loop);
+    }
+    loop();
+  </script>
 </body>
 </html>
