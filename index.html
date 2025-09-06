@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+  <title>Cow Game • Starter</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div id="ui">
+    <h1>🐄 Cow Game (Starter)</h1>
+    <p class="hint">Add your animation image links below (one by one). They will be saved in your browser (localStorage) and will work on GitHub Pages + iPhone.</p>
+
+    <form id="add-frame-form">
+      <label>
+        Animation name
+        <input id="anim-name" list="anim-presets" placeholder="e.g., idle, walk, eat, blink, attack" required />
+        <datalist id="anim-presets">
+          <option value="idle"></option>
+          <option value="walk"></option>
+          <option value="eat"></option>
+          <option value="blink"></option>
+          <option value="attack"></option>
+        </datalist>
+      </label>
+      <label>
+        Image URL (PNG/WebP with transparent background recommended)
+        <input id="frame-url" type="url" placeholder="https://..." required />
+      </label>
+      <label class="small">
+        Frame duration (ms)
+        <input id="frame-duration" type="number" min="16" value="120" required />
+      </label>
+      <label class="small">
+        Loop?
+        <input id="frame-loop" type="checkbox" checked />
+      </label>
+      <button type="submit">Add frame</button>
+      <button type="button" id="clear-all" class="danger">Clear all</button>
+      <button type="button" id="export-json">Export JSON</button>
+      <input type="file" id="import-json" accept="application/json" hidden />
+      <button type="button" id="import-json-btn">Import JSON</button>
+    </form>
+
+    <div id="anim-list"></div>
+  </div>
+
+  <canvas id="game" width="1280" height="720"></canvas>
+
+  <div id="controls">
+    <button id="btn-left" aria-label="Left">⬅️</button>
+    <button id="btn-right" aria-label="Right">➡️</button>
+    <button id="btn-eat" aria-label="Eat">🍀</button>
+    <button id="btn-attack" aria-label="Attack">💥</button>
+  </div>
+
+  <script src="js/animations.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
